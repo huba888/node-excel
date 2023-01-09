@@ -24,7 +24,7 @@ async function transformData(pathName,name){
                 continue
             }
             // 去除手尾空格
-            if(!rows[0]) continue
+            if(!rows[0] || rows[0].length === 0) continue
             rows[0] = rows[0].trim()
             if (!isChineseStart(rows[0])){
                 // 不是中文开头的直接跳过
