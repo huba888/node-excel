@@ -1,6 +1,6 @@
 {
   "name": "huba-excel",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "",
   "main": "index.js",
   "bin": {
@@ -10,6 +10,6 @@
   "license": "ISC",
   "dependencies": {
     "node-xlsx": "^0.21.0",
-    "pinyin": "^3.0.0-alpha.5"
+    "transliteration": "^2.3.5"
   }
 }

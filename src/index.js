@@ -1,52 +1,58 @@
 #! /usr/bin/env node
 const xlsx = require('node-xlsx');
-const  { pinyin } = require("pinyin")
+const  { pinyin } = require("./shared/utils.js")
 const fs = require("fs")
 const path = require('path')
 const { isChineseStart,toTitle } = require("./shared/utils.js")
 async function transformData(pathName,name){
-    console.log(pathName,"正在转换")
-    const list = xlsx.parse(pathName)
-    for(const sheet of list){
-        let flag = false
-        for(const rows of sheet.data){
-            if(flag == false) {
-                if(rows.length !== 2 || rows[0] !== "姓名原版" || rows[1] !== "姓名"){
-                    console.log(pathName,"文件格式不符合要求")
-                    console.log("-----格式要求-----")
-                    console.log("姓名原版   姓名")  
-                    console.log(" xxxx        ")  
-                    console.log(" xxxx        ")  
-                    return false
+    try {
+        console.log(pathName,"正在转换")
+        const list = xlsx.parse(pathName)
+        for(const sheet of list){
+            let flag = false
+            for(const rows of sheet.data){
+                if(flag == false) {
+                    if(rows.length !== 2 || rows[0] !== "姓名原版" || rows[1] !== "姓名"){
+                        console.log(pathName,"文件格式不符合要求")
+                        console.log("-----格式要求-----")
+                        console.log("姓名原版   姓名")  
+                        console.log(" xxxx        ")  
+                        console.log(" xxxx        ")  
+                        return false
+                    }
+                    // 跳过标题
+                    flag = true
+                    continue
                 }
-                // 跳过标题
-                flag = true
-                continue
+                if(Number.isInteger(rows[0])) continue
+                if(!rows[0]) continue
+                // 去除首尾空格
+                rows[0] = rows[0].trim()
+                if (!isChineseStart(rows[0])){
+                    // 不是中文开头的直接跳过
+                    continue
+                }
+                if(!rows[0]) continue
+                // console.log(rows[0])
+                // 字符串分割 按照不是中文的字符进行分割，然后拿到第一个中文
+                const name = rows[0].split(/[^\u4E00-\u9FA5]/)[0]
+                let pinyinNames = pinyin(name);
+                // 数组平铺
+                const firstNamePinyin = pinyinNames.shift()
+                const firstName = toTitle(firstNamePinyin)
+                const tempLastName = pinyinNames.join("")
+                const lastName = toTitle(tempLastName)
+                rows[1] = name + " " + lastName +  " " + firstName 
             }
-            // 去除手尾空格
-            if(!rows[0] || rows[0].length === 0) continue
-            rows[0] = rows[0].trim()
-            if (!isChineseStart(rows[0])){
-                // 不是中文开头的直接跳过
-                continue
-            }
-            // console.log(rows[0])
-            // 字符串分割 按照不是中文的字符进行分割，然后拿到第一个中文
-            const name = rows[0].split(/[^\u4E00-\u9FA5]/)[0]
-            let pinyinNames = pinyin(name, { style: pinyin.STYLE_NORMAL });
-            // 数组平铺
-            pinyinNames = pinyinNames.flat(1)
-            const firstNamePinyin = pinyinNames.shift()
-            const firstName = toTitle(firstNamePinyin)
-            const tempLastName = pinyinNames.join("")
-            const lastName = toTitle(tempLastName)
-            rows[1] = name + " " + lastName +  " " + firstName 
         }
+        const outputDirName = path.resolve(process.cwd(),"./output")
+        if(!fs.existsSync(outputDirName)) fs.mkdirSync(outputDirName)
+        fs.writeFileSync(path.resolve(outputDirName,name),xlsx.build(list),{ encoding:"binary",flag:"w+" });
+        return true
+    } catch (error) {
+        console.log("您的excel中出现了未知的格式,请查看")
+        return false
     }
-    const outputDirName = path.resolve(process.cwd(),"./output")
-    if(!fs.existsSync(outputDirName)) fs.mkdirSync(outputDirName)
-    fs.writeFileSync(path.resolve(outputDirName,name),xlsx.build(list),{ encoding:"binary",flag:"w+" });
-    return true
 }
 
 function main(){
